@@ -17,8 +17,50 @@ print("Missing values:\n", df.isnull().sum())
 # Check for duplicates
 print("Duplicate rows:", df.duplicated().sum())
 
-# Assuming df_train has already been split earlier
+# data types and summary stats
+df.describe(include="all")
+
+# Plot distributions...
+df.hist(figsize = (15,20))
+
+# Bar plot for Outcome
+sns.countplot(x='Outcome', data=df)
+plt.title('Outcome Distribution')
+plt.show()
+
+plt.figure(figsize=(10, 8))
+sns.heatmap(df.corr(), annot=True, cmap='coolwarm', fmt=".2f")
+plt.show()
+
+# Create a heatmap of the correlations with the target column
+corr = df.corr()
+target_corr = corr['Outcome'].drop('Outcome')
+
+# Sort correlation values in descending order
+target_corr_sorted = target_corr.sort_values(ascending=False)
+
+sns.set(font_scale=0.8)
+sns.set_style("white")
+sns.set_palette("PuBuGn_d")
+sns.heatmap(target_corr_sorted.to_frame(), cmap="coolwarm", annot=True, fmt='.2f')
+plt.title('Correlation with Outcome')
+plt.show()
+
+#train/test split so the test data remains "unseen"
+
+df_copy = df.copy()
+df_train = df_copy.sample(frac=0.80, random_state=0)
+df_test = df_copy.drop(df_train.index)
+
 print(df_train.head())
+
+# Identify columns with zero values and count the number of zero values in each column in the training set
+zero_counts = (df_train == 0).sum()
+
+# Filter out columns that contain zero values
+columns_with_zeros = zero_counts[zero_counts > 0]
+
+print(columns_with_zeros)
 
 # Replace zero values in specific columns with median
 columns_to_replace = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
@@ -76,16 +118,4 @@ plt.show()
 # Preview cleaned training set
 print(df_train.head())
 
-# Clean test set (df_test assumed available)
-df_test_cleaned = df_test.copy()
-for column in columns_to_replace:
-    median_value = df_test_cleaned[column].median()
-    df_test_cleaned[column] = df_test_cleaned[column].replace(0, median_value)
 
-# Normalize test features using same scaler
-X_test = df_test_cleaned.drop(columns=['Outcome'])
-y_test = df_test_cleaned['Outcome']
-X_test_normalized = pd.DataFrame(scaler.transform(X_test), columns=X_test.columns)
-
-# Select only features used during training
-X_test_selected = X_test_normalized[selected_feature_names]
